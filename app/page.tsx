@@ -43,8 +43,8 @@ export default function Home() {
         Click me to scan
       </button>
 
-      {data && <p>Data: {data}</p>}
-      {error && <p className="text-red-500">{error}</p>}
+      <p>Data: {data}</p>
+      <p className="text-red-500">{error}</p>
     </div>
   );
 }

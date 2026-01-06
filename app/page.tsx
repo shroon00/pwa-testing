@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-// Define NDEFReader interface for TypeScript
 declare global {
   interface Window {
     NDEFReader?: any;
@@ -14,8 +13,9 @@ export default function Home() {
   const [error, setError] = useState<string>("");
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isSupported, setIsSupported] = useState<boolean>(true);
+  const [textToWrite, setTextToWrite] = useState<string>("");
+  const [isWriting, setIsWriting] = useState<boolean>(false);
 
-  // Check NFC support on component mount
   useEffect(() => {
     const checkNFCSupport = () => {
       if ("NDEFReader" in window) {
@@ -42,7 +42,6 @@ export default function Home() {
 
       const reader = new (window as any).NDEFReader();
 
-      // Add error handling
       reader.onreadingerror = (event: any) => {
         console.error("NFC reading error:", event);
         setError(`Read error: ${event.message || "Unknown error"}`);
@@ -86,7 +85,6 @@ export default function Home() {
 
       await reader.scan();
       
-      // Set timeout to stop scanning after 30 seconds
       setTimeout(() => {
         if (isScanning) {
           setIsScanning(false);
@@ -101,10 +99,66 @@ export default function Home() {
     }
   };
 
+  const writeNFC = async () => {
+    try {
+      if (!textToWrite.trim()) {
+        setError("Please enter text to write to NFC");
+        return;
+      }
+
+      if (!("NDEFReader" in window)) {
+        setError("NFC is not supported on this device");
+        return;
+      }
+
+      setIsWriting(true);
+      setError("");
+      
+      const writer = new (window as any).NDEFReader();
+      
+      await writer.write({
+        records: [{ 
+          recordType: "text", 
+          data: textToWrite,
+          lang: "en"
+        }]
+      });
+      
+      setData(`Successfully wrote: ${textToWrite}`);
+      setError("");
+      setIsWriting(false);
+      
+      setTextToWrite("");
+      
+    } catch (err: any) {
+      console.error("NFC write error:", err);
+      setError(`Write failed: ${err.message}`);
+      setIsWriting(false);
+    }
+  };
+
   return (
     <div>
-      <p>Scan your NFC</p>
+      <div className="mb-6">
+        <p className="mb-2">Write to NFC Tag:</p>
+        <textarea
+          value={textToWrite}
+          onChange={(e) => setTextToWrite(e.target.value)}
+          placeholder="Enter text to write to NFC tag..."
+          className="w-full p-2 border-2 border-gray-300 rounded mb-2"
+          rows={3}
+          disabled={isWriting}
+        />
+        <button
+          onClick={writeNFC}
+          className="border-2 bg-blue-400 text-white px-4 py-2"
+          disabled={!isSupported || isWriting || !textToWrite.trim()}
+        >
+          {isWriting ? "Writing..." : "Write to NFC"}
+        </button>
+      </div>
 
+      <p>Scan your NFC</p>
       <button
         className="border-2 bg-red-400 text-white px-4 py-2"
         onClick={scanNFC}
